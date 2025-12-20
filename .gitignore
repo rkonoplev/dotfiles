@@ -1,23 +1,29 @@
-
-macOS
+# macOS system files
 .DS_Store
 .AppleDouble
 .LSOverride
 
-Temporary files
+# Temporary files  
 *.swp
 *.swo
 *~
+*.backup
+*.old
 
-IDE
+# IDE files
 .vscode/
 .idea/
 *.iml
 
-Backup files
-*.backup
-*.old
-
-Local overrides
+# Local override files (для секретов)
+.secrets.zsh
 .local.zsh
-.local.sh
+env.zsh
+
+# Logs
+*.log
+
+# OS generated files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
