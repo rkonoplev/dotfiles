@@ -536,6 +536,8 @@ phoebe-info() {
 }
 
 alias phi='phoebe-info'
+
+
 # ====================================================
 # 🎯 QUICK USAGE GUIDE
 # ====================================================
@@ -566,10 +568,143 @@ alias phi='phoebe-info'
 # plogs                  # View Phoebe application logs
 # ports                  # Check listening ports
 # dps                    # List Docker containers
+#
+# ====================================================
+# 🗃️  DOTFILES MANAGEMENT FUNCTIONS
+# ====================================================
+
+# Sync dotfiles with confirmation prompt
+sync-dotfiles() {
+    echo "🔄 Syncing dotfiles..."
+    cd ~/dev/dotfiles
+    cp ~/.zshrc .
+    
+    # Check if there are any changes
+    if git diff --quiet; then
+        echo "✅ No changes to sync"
+    else
+        echo "📝 Changes detected:"
+        git diff --stat
+        echo ""
+        read -q "REPLY?Commit and push? (y/n) "
+        echo ""
+        if [[ $REPLY =~ ^[Yy]$ ]]; then
+            git add .
+            git commit -m "Update: $(date +'%Y-%m-%d %H:%M')"
+            git push
+            echo "✅ Dotfiles synced to GitHub"
+        else
+            echo "❌ Sync cancelled"
+        fi
+    fi
+}
+
+# Quick sync without confirmation (for trusted updates)
+quick-dots-sync() {
+    cd ~/dev/dotfiles
+    cp ~/.zshrc .
+    git add .
+    git commit -m "Quick update: $(date +'%Y-%m-%d %H:%M')" 2>/dev/null
+    git push 2>/dev/null
+    echo "✅ Quick sync completed"
+}
+
+# Show changes before syncing
+dots-check() {
+    cd ~/dev/dotfiles
+    cp ~/.zshrc .
+    echo "📋 Changes to be synced:"
+    git diff .zshrc
+    echo ""
+    echo "Run 'dots-sync' to commit these changes"
+}
+
+# Restore configuration from repository
+dots-restore() {
+    cd ~/dev/dotfiles
+    cp .zshrc ~/.zshrc
+    source ~/.zshrc
+    echo "✅ Configuration restored from repository"
+}
+
+# Check repository status
+dots-status() {
+    cd ~/dev/dotfiles
+    echo "📊 Dotfiles repository status:"
+    git status
+}
+
+# Show recent commit history
+dots-log() {
+    cd ~/dev/dotfiles
+    echo "📜 Recent commits:"
+    git log --oneline -10
+}
+
+# Compare local and repository versions
+dots-diff() {
+    cd ~/dev/dotfiles
+    echo "🔍 Comparing local vs repository:"
+    git diff .zshrc
+}
+
+# Pull latest changes from repository
+dots-update() {
+    cd ~/dev/dotfiles
+    git pull
+    cp .zshrc ~/.zshrc
+    source ~/.zshrc
+    echo "✅ Updated from repository"
+}
+
+# ====================================================
+# 🎯 DOTFILES ALIASES (Quick access)
+# ====================================================
+alias dots='cd ~/dev/dotfiles'           # Navigate to dotfiles directory
+alias dots-sync='sync-dotfiles'          # Sync with confirmation
+alias dots-quick='quick-dots-sync'       # Quick sync without confirmation
+alias dots-check='dots-check'            # Show changes before syncing
+alias dots-restore='dots-restore'        # Restore from repository
+alias dots-status='dots-status'          # Check repository status
+alias dots-log='dots-log'                # Show commit history
+alias dots-diff='dots-diff'              # Compare versions
+alias dots-update='dots-update'          # Pull and apply updates
+alias dots-help='echo "📚 Dotfiles commands: dots, dots-sync, dots-check, dots-restore, dots-status, dots-log, dots-diff, dots-update"'
+
+# ====================================================
+# 💡 USAGE EXAMPLES:
 # 
+# dots                   # Go to dotfiles directory
+# dots-sync              # Sync changes with confirmation
+# dots-quick             # Quick sync without prompts
+# dots-check             # Preview changes before syncing
+# dots-restore           # Restore config from repository
+# dots-status            # Check repository status
+# dots-log               # Show commit history
+# dots-diff              # Compare local vs repo
+# dots-update            # Pull latest changes
+# ====================================================
+
 # ====================================================
 # 💾 Save this file to GitHub:
 #   git add ~/.zshrc
 #   git commit -m "Add terminal configuration for Phoebe project"
 #   git push
 # ====================================================
+
+
+# ====================================================
+# 💬 INTERACTIVE COMMENTS
+# ====================================================
+# Enable in-line comments in interactive shell
+# Allows using # for comments after commands
+# 
+# Example usage:
+#   $ echo hello # this will print hello
+#   $ ls -la # list all files with details
+#   $ some_command --option value # comment explaining why
+#
+# Without this option, zsh would treat # as literal character
+# With this option, everything after # is ignored as comment
+# ====================================================
+setopt INTERACTIVE_COMMENTS
