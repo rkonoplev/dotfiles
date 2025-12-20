@@ -1,0 +1,23 @@
+
+macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+Temporary files
+*.swp
+*.swo
+*~
+
+IDE
+.vscode/
+.idea/
+*.iml
+
+Backup files
+*.backup
+*.old
+
+Local overrides
+.local.zsh
+.local.sh
