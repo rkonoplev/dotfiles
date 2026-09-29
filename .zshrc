@@ -1,7 +1,7 @@
 #!/bin/zsh
 # ====================================================
 # 🎨 Ultimate Terminal Configuration for macOS
-# Version 4.5 | Phoebe Project (SECURE + DOCUMENTED)
+# Version 4.6 | Phoebe Project (SECURE + DOCUMENTED)
 # ====================================================
 #
 # Description:
@@ -19,6 +19,7 @@
 #   4.  File listing (eza / exa / ls)
 #   5.  Navigation
 #   6.  Gradle & Make
+#   6.5 Phoebe Full Cycles (pdev / pfull / pdebug)
 #   7.  Docker management
 #   8.  Docker cleanup (safe + aggressive)
 #   9.  Git aliases
@@ -35,6 +36,7 @@
 #   20. Dotfiles management
 #   21. Interactive comments
 #   22. Secrets (safe load)
+#   23. Quick Usage Guide (cheat sheet)
 #
 # ====================================================
 
@@ -188,14 +190,23 @@ alias mrun-hybrid='cd ~/dev/java/phoebe/backend && make run-hybrid'
 alias mclean='cd ~/dev/java/phoebe/backend && make clean'
 alias mbuild='cd ~/dev/java/phoebe/backend && make build'
 
-# Full development cycles for Phoebe
-alias pdev='cd ~/dev/java/phoebe/backend && make reset && make run-hybrid'
-alias pfull='cd ~/dev/java/phoebe/backend && make clean && make build && make test'
-alias pdebug='cd ~/dev/java/phoebe/backend && SPRING_PROFILES_ACTIVE=debug gw bootRun --debug-jvm'
+# =======================
+# 🚀 6.5 PHOEBE FULL CYCLES
+# =======================
+# Full development cycles — the "big red buttons".
+# These are the most useful commands in the whole config.
 
-# Monitoring
-alias plogs='cd ~/dev/java/phoebe/backend && tail -f logs/application.log'
-alias pstats='cd ~/dev/java/phoebe/backend && docker stats'
+# Full Phoebe restart
+# Resets everything and boots the hybrid (backend + frontend) stack.
+alias pdev='cd ~/dev/java/phoebe/backend && make reset && make run-hybrid'
+
+# Clean, build, and test backend
+# Standard "make sure nothing is broken" pipeline for Spring Boot.
+alias pfull='cd ~/dev/java/phoebe/backend && make clean && make build && make test'
+
+# Debug mode (JDWP on port 5005)
+# Runs Spring Boot with a remote debugger attached.
+alias pdebug='cd ~/dev/java/phoebe/backend && SPRING_PROFILES_ACTIVE=debug gw bootRun --debug-jvm'
 
 # =======================
 # 🐋 7. DOCKER MANAGEMENT
@@ -674,33 +685,55 @@ setopt INTERACTIVE_COMMENTS
 [[ -f ~/.secrets.zsh ]] && source ~/.secrets.zsh
 
 # ====================================================
-# 🎯 QUICK USAGE GUIDE (cheat sheet)
+# 🎯 23. QUICK USAGE GUIDE (cheat sheet)
 # ====================================================
 # ESSENTIAL:
-#   phi            - Show this cheat sheet
-#   pdev           - Full Phoebe restart
-#   pstatus        - System status (backend + docker + ports)
-#   pclean-docker  - Clean Phoebe Docker environment
+#   phi              - Show this cheat sheet (context-aware)
+#   pdev             - Full Phoebe restart
+#   pstatus          - Check system status (backend + Docker + ports)
+#   pclean-docker    - Clean Phoebe Docker environment
+#   pfull            - Clean + build + test backend
+#   pdebug           - Run backend with remote debugger (port 5005)
 #
 # NAVIGATION:
-#   p / pbe / pfe  - project / backend / frontends
-#   nx / ng / rn   - Next.js / Angular / React
+#   p / pbe / pfe    - project / backend / frontends
+#   pconf            - backend src/main/resources
+#   nx / ng / rn     - Next.js / Angular / React
+#   vue              - Vue frontend
 #
 # BUILD:
-#   gw clean build - clean + build backend
-#   gw bootRun     - run Spring Boot
-#   mk reset       - reset Phoebe environment
+#   gw clean build   - clean + build backend
+#   gw bootRun       - run Spring Boot
+#   gw test          - run tests
+#   mk reset         - reset Phoebe environment
+#   mk run-hybrid    - run in hybrid mode
 #
 # DOCKER:
 #   pbd-up / pbd-down    - start / stop Phoebe containers
-#   dclean-step          - safe step-by-step cleanup
-#   docker-start / stop  - control Docker Desktop
+#   pbd-logs / pbd-ps    - logs / status
+#   dps                  - list all Docker containers
+#   dclean-step          - safe step-by-step cleanup (asks)
+#   dclean-all           - aggressive cleanup (removes everything)
+#   pclean-docker        - clean only Phoebe Docker resources
+#   docker-start / stop  - control Docker Desktop app
 #
 # GIT:
-#   gs / gl / gd   - status / log / diff
-#   gcm "msg"      - commit
-#   gp / gps       - pull / push
+#   gs / gl / gd     - status / pretty log / diff
+#   gcm "msg"        - commit with message
+#   gp / gps         - pull / push
+#   gco / gb         - checkout / branch
+#
+# MONITORING:
+#   pstatus          - full stack health check
+#   plogs            - tail Spring Boot logs
+#   pstats           - Docker container stats
+#   ports            - list all listening ports
 #
 # DOTFILES:
-#   dots / ds / dr / dotsu - navigate / sync / restore / update
+#   dots             - navigate to dotfiles repo
+#   ds               - sync to GitHub (with confirmation)
+#   dotc             - preview changes before syncing
+#   dr               - restore from repo (with backup)
+#   dotsu            - pull latest (with backup)
+#   dots-help        - list all dotfiles commands
 # ====================================================
