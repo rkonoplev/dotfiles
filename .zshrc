@@ -1,7 +1,7 @@
 #!/bin/zsh
 # ====================================================
 # 🎨 Ultimate Terminal Configuration for macOS
-# Version 4.1 | Phoebe Project 
+# Version 4.3 | Phoebe Project (FIXED & SECURE)
 # ====================================================
 # 
 # Description: This configuration file enhances your terminal experience on macOS
@@ -23,10 +23,11 @@
 autoload -U colors && colors
 
 # =======================
-# 🐙 2. GIT FUNCTIONS (FIXED - NO PROMPT ESCAPES)
+# 🐙 2. GIT FUNCTIONS (SAFE)
 # =======================
-# Function for git branch (returns plain text)
+# Function for git branch (returns plain text, safe outside git repos)
 parse_git_branch() {
+    git rev-parse --is-inside-work-tree &>/dev/null || return
     local git_branch
     git_branch=$(git branch 2> /dev/null | sed -n -e 's/^\* \(.*\)/\1/p')
     if [[ -n "$git_branch" ]]; then
@@ -34,8 +35,9 @@ parse_git_branch() {
     fi
 }
 
-# Function for git status (returns plain text symbols)
+# Function for git status (returns plain text symbols, safe outside git repos)
 parse_git_status() {
+    git rev-parse --is-inside-work-tree &>/dev/null || return
     local git_state
     git_state=$(git status --porcelain 2> /dev/null)
     if [[ -n "$git_state" ]]; then
@@ -48,7 +50,7 @@ parse_git_status() {
 setopt PROMPT_SUBST
 
 # =======================
-# 💻 3. CUSTOM PROMPT (FIXED)
+# 💻 3. CUSTOM PROMPT
 # =======================
 # Multi-line prompt - prompt escapes ONLY here
 PROMPT=$'%F{blue}┌─[%f%F{cyan}%n%f%F{blue}@%f%F{yellow}%m%f%F{blue}]─[%f%F{white}%B%(4~|…/|)%3~%b%f%F{blue}]%f\n%F{blue}└─%f%F{red}❯%f '
@@ -57,20 +59,22 @@ PROMPT=$'%F{blue}┌─[%f%F{cyan}%n%f%F{blue}@%f%F{yellow}%m%f%F{blue}]─[%f%F
 RPROMPT='%F{red}$(parse_git_status)%f%F{green}$(parse_git_branch)%f %F{yellow}%D{%H:%M}%f'
 
 # =======================
-# 📁 4. FILE LISTING
+# 📁 4. FILE LISTING (eza preferred over exa)
 # =======================
-# Colors in terminal
 export CLICOLOR=1
 export LSCOLORS=Gxfxcxdxbxegedabagacad
 
-# Enhanced ls with icons (if exa is installed)
-if command -v exa &> /dev/null; then
+if command -v eza &> /dev/null; then
+    alias ls='eza --icons --group-directories-first'
+    alias ll='eza -la --icons --group-directories-first --git --time-style=long-iso'
+    alias la='eza -a --icons --group-directories-first'
+    alias lt='eza --tree --icons --group-directories-first -L 3'
+elif command -v exa &> /dev/null; then
     alias ls='exa --icons --group-directories-first'
     alias ll='exa -la --icons --group-directories-first --git --time-style=long-iso'
     alias la='exa -a --icons --group-directories-first'
     alias lt='exa --tree --icons --group-directories-first -L 3'
 else
-    # Standard colored ls
     alias ls='ls -G'
     alias ll='ls -laGh'
     alias la='ls -AGh'
@@ -78,7 +82,7 @@ else
 fi
 
 # =======================
-# 🗺️  5. NAVIGATION
+# 🗺️ 5. NAVIGATION
 # =======================
 # Basic navigation
 alias ..='cd ..'
@@ -91,7 +95,7 @@ alias -- -='cd -'
 # Project aliases (Phoebe)
 alias p="cd ~/dev/java/phoebe"
 alias pbe="cd ~/dev/java/phoebe/backend"
-alias pfe="cd ~/dev/java/phoebe/frontend"
+alias pfe="cd ~/dev/frontends" # FIXED: points to correct frontends directory
 alias pconf="cd ~/dev/java/phoebe/backend/src/main/resources"
 
 # Frontend projects
@@ -117,16 +121,16 @@ gw() {
     if [[ -f "./gradlew" ]]; then
         ./gradlew "$@"
     elif [[ -f "../gradlew" ]]; then
-        cd .. && ./gradlew "$@" && cd -
+        (cd .. && ./gradlew "$@")
     elif [[ -d "$HOME/dev/java/phoebe/backend" ]]; then
-        cd "$HOME/dev/java/phoebe/backend" && ./gradlew "$@"
+        (cd "$HOME/dev/java/phoebe/backend" && ./gradlew "$@")
     else
         echo "❌ gradlew not found!"
         return 1
     fi
 }
 
-# Quick Gradle commands (automatically find backend)
+# Quick Gradle commands
 alias grad='gw'
 alias gwb='cd ~/dev/java/phoebe/backend && ./gradlew'
 alias gclean='gw clean'
@@ -136,28 +140,21 @@ alias grun='gw run'
 alias gboot='gw bootRun'
 alias gdeps='gw dependencies'
 
-# Make commands for Phoebe
-make() {
-    local makefile_path=""
-    
-    # Look for Makefile in current or parent directories
+# Safe Make wrapper (does not override system 'make' dangerously)
+pmake() {
     if [[ -f "./Makefile" ]]; then
-        makefile_path="./Makefile"
+        command make "$@"
     elif [[ -f "../Makefile" ]]; then
-        cd .. && command make "$@" && cd -
-        return
+        (cd .. && command make "$@")
     elif [[ -f "$HOME/dev/java/phoebe/backend/Makefile" ]]; then
-        cd "$HOME/dev/java/phoebe/backend" && command make "$@"
-        return
+        (cd "$HOME/dev/java/phoebe/backend" && command make "$@")
     else
-        echo "❌ Makefile not found!"
+        echo "❌ Makefile not found"
         return 1
     fi
-    
-    command make -f "$makefile_path" "$@"
 }
 
-# Specific Make commands for Phoebe
+alias mk='pmake'
 alias mreset='cd ~/dev/java/phoebe/backend && make reset'
 alias mrun='cd ~/dev/java/phoebe/backend && make run'
 alias mrun-hybrid='cd ~/dev/java/phoebe/backend && make run-hybrid'
@@ -174,7 +171,7 @@ alias plogs='cd ~/dev/java/phoebe/backend && tail -f logs/application.log'
 alias pstats='cd ~/dev/java/phoebe/backend && docker stats'
 
 # =======================
-# 🐋 8. DOCKER MANAGEMENT (FROM ANYWHERE)
+# 🐋 7. DOCKER MANAGEMENT
 # =======================
 # Docker Compose for Phoebe
 alias pbd='cd ~/dev/java/phoebe/backend && docker-compose'
@@ -199,28 +196,25 @@ alias drm='docker rm'
 alias drmi='docker rmi'
 
 # =======================
-# 🧹 9. DOCKER CLEANUP COMMANDS
+# 🧹 8. DOCKER CLEANUP (SECURE)
 # =======================
-# 1. Stop all running containers
 alias dstop-all='docker stop $(docker ps -aq)'
-
-# 2. Remove all containers (running and stopped)
 alias drm-all='docker rm $(docker ps -aq)'
-
-# 3. Remove all unused Docker resources (images, networks, build cache)
 alias dprune='docker system prune'
-
-# 4. Remove all unused volumes (CAUTION: will remove data!)
 alias dvol-prune='docker volume prune'
-
-# 5. Remove all Docker images (CAUTION: will delete all images!)
 alias drmi-all='docker rmi -f $(docker images -aq)'
-
-# 6. Complete Docker cleanup (aggressive - removes everything unused)
 alias dclean-all='docker stop $(docker ps -aq) 2>/dev/null; docker rm $(docker ps -aq) 2>/dev/null; docker system prune -a -f --volumes'
 
-# 7. Step-by-step Docker cleanup
+# Step-by-step Docker cleanup WITH CONFIRMATION
 dclean-step() {
+    echo "⚠️  WARNING: This will stop and remove ALL Docker containers and volumes on this machine."
+    read -q "REPLY?Are you absolutely sure you want to continue? (y/N) "
+    echo ""
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        echo "❌ Docker cleanup cancelled."
+        return 1
+    fi
+
     echo "Step 1: Stopping all containers..."
     docker stop $(docker ps -aq) 2>/dev/null || echo "No containers to stop"
     
@@ -236,17 +230,19 @@ dclean-step() {
     echo "✅ Docker cleanup complete!"
 }
 
-# 8. Phoebe-specific Docker cleanup
+# Phoebe-specific Docker cleanup (safe subshell)
 pclean-docker() {
     echo "🧹 Cleaning Phoebe Docker environment..."
-    cd ~/dev/java/phoebe/backend
-    docker-compose down
-    docker system prune -f
+    (
+        cd ~/dev/java/phoebe/backend || return
+        docker-compose down
+        docker system prune -f
+    )
     echo "✅ Phoebe Docker cleanup complete!"
 }
 
 # =======================
-# ⚡ 10. GIT ALIASES
+# ⚡ 9. GIT ALIASES
 # =======================
 alias g='git'
 alias gs='git status'
@@ -262,7 +258,7 @@ alias gp='git pull'
 alias gps='git push'
 
 # =======================
-# 🛠️  11. DEVELOPMENT TOOLS
+# 🛠️ 10. DEVELOPMENT TOOLS
 # =======================
 # NPM/Yarn
 alias nr="npm run"
@@ -271,106 +267,78 @@ alias ns="npm start"
 alias nt="npm test"
 alias nb="npm run build"
 alias ni="npm install"
-
-# Yarn
 alias y="yarn"
 alias yd="yarn dev"
 alias ys="yarn start"
 
-# Angular CLI
+# Frameworks
 alias ngs="ng serve"
 alias ngb="ng build"
 alias nggc="ng generate component"
-
-# Next.js
 alias nxd="next dev"
 alias nxs="next start"
-
-# TypeScript
 alias tscw="tsc --watch"
 alias tsn="ts-node"
 
 # =======================
-# 🖥️  12. SYSTEM & MACOS
+# 🖥️ 11. SYSTEM & MACOS
 # =======================
-# Finder
 alias showhidden='defaults write com.apple.finder AppleShowAllFiles YES; killall Finder'
 alias hidehidden='defaults write com.apple.finder AppleShowAllFiles NO; killall Finder'
-
-# Network
 alias ip='curl -s ifconfig.me'
 alias localip='ipconfig getifaddr en0'
 alias ports='lsof -i -P -n | grep LISTEN'
-
-# Port checking
 alias port3000='lsof -i :3000'
 alias port4200='lsof -i :4200'
 alias port8080='lsof -i :8080'
 
 # =======================
-# 🔧 13. UTILITIES
+# 🔧 12. UTILITIES
 # =======================
-# Safety
-alias rm='rm -i'
+alias rm='rm -I'   # -I prompts once before removing >3 files, safer than -i
 alias cp='cp -i'
 alias mv='mv -i'
-
-# Files and disks
 alias du='du -h'
 alias df='df -h'
 alias sizes='du -sh * | sort -hr'
-
-# Text and search
 alias grep='grep --color=auto'
-
-# Utilities
 alias c='clear'
 alias h='history'
-alias weather='curl -s "wttr.in/Moscow?format=3"'
-
-# Python
+alias weather='curl -s "wttr.in/Setubal?format=3"' # Updated to your location
 alias python='python3'
 alias pip='pip3'
 
 # =======================
-# 🚀 14. PRODUCTIVITY
+# 🚀 13. PRODUCTIVITY
 # =======================
 alias please='sudo !!'
-alias sl='ls'  # for typos :)
-
-# Open applications
+alias sl='ls'
 alias chrome='open -a "Google Chrome"'
 alias vscode='code'
 
 # =======================
-# 📦 15. PACKAGE MANAGERS
+# 📦 14. PACKAGE MANAGERS
 # =======================
-# Homebrew
 alias brewup='brew update && brew upgrade && brew cleanup'
 alias brewi='brew install'
 
 # =======================
-# 🛠️  16. CUSTOM FUNCTIONS
+# 🛠️ 15. CUSTOM FUNCTIONS (SAFE CD)
 # =======================
-# Function to check Phoebe status
+# Function to check Phoebe status (FIXED: MySQL port 3306, subshell for cd)
 pstatus() {
     echo "📊 Phoebe Backend Status:"
     echo "========================="
     
-    # Check Docker
     echo "🐳 Docker containers:"
-    cd ~/dev/java/phoebe/backend && docker-compose ps
+    (cd ~/dev/java/phoebe/backend && docker-compose ps)
     
     echo ""
-    
-    # Check ports
     echo "🔌 Listening ports:"
     lsof -i :8080 2>/dev/null | grep LISTEN || echo "❌ Port 8080 not listening"
-    lsof -i :5432 2>/dev/null | grep LISTEN || echo "❌ Port 5432 (PostgreSQL) not listening"
+    lsof -i :3306 2>/dev/null | grep LISTEN || echo "❌ Port 3306 (MySQL) not listening"
     
     echo ""
-    
-    # Check application health
     echo "🏥 Health check:"
     if command -v jq &> /dev/null; then
         curl -s http://localhost:8080/actuator/health 2>/dev/null | jq .status 2>/dev/null || echo "❌ Application not responding"
@@ -379,32 +347,35 @@ pstatus() {
     fi
 }
 
-# Function to restart application
+# Function to restart application (subshell prevents directory change)
 prestart() {
-    cd ~/dev/java/phoebe/backend
-    echo "🧹 Cleaning..."
-    gw clean
-    echo "🏗️  Building..."
-    gw build
-    echo "🐳 Restarting Docker..."
-    docker-compose down 2>/dev/null
-    docker-compose up -d 2>/dev/null
-    echo "🚀 Starting application..."
-    gw bootRun
+    (
+        cd ~/dev/java/phoebe/backend || return
+        echo "🧹 Cleaning..."
+        gw clean
+        echo "🏗️  Building..."
+        gw build
+        echo "🐳 Restarting Docker..."
+        docker-compose down 2>/dev/null
+        docker-compose up -d 2>/dev/null
+        echo "🚀 Starting application..."
+        gw bootRun
+    )
 }
 
-# Function to run a single test
+# Function to run a single test (subshell prevents directory change)
 ptest-one() {
-    cd ~/dev/java/phoebe/backend
-    gw test --tests "*$1*"
+    (
+        cd ~/dev/java/phoebe/backend || return
+        gw test --tests "*$1*"
+    )
 }
 
-# Function to start Docker Desktop from terminal
+# Docker Desktop control
 docker-start() {
     echo "🚀 Starting Docker Desktop..."
     open -a Docker
-    echo "✅ Docker Desktop is starting."
-    echo "ℹ️  Wait for Docker icon to show in menu bar."
+    echo "✅ Docker Desktop is starting. Wait for the icon in the menu bar."
 }
 
 docker-stop() {
@@ -420,101 +391,81 @@ docker-restart() {
 }
 
 # =======================
-# ⚙️  17. ENVIRONMENT
+# ⚙️ 16. ENVIRONMENT & SHELL BEHAVIOR
 # =======================
-# Command history
 export HISTSIZE=100000
 export SAVEHIST=100000
 setopt HIST_IGNORE_ALL_DUPS
 setopt HIST_SAVE_NO_DUPS
+setopt HIST_REDUCE_BLANKS
+setopt INC_APPEND_HISTORY
+setopt SHARE_HISTORY
 
-# Default editor
 export EDITOR='nano'
+export VISUAL='nano'
 
-# Paths
-export PATH="/usr/local/bin:$PATH"
-export PATH="/opt/homebrew/bin:$PATH"
-export PATH="$HOME/.local/bin:$PATH"
+# PATH (zsh-native array to avoid duplicates)
+path=(
+  /opt/homebrew/bin
+  /usr/local/bin
+  $HOME/.local/bin
+  $path
+)
+export PATH
 
-# Language
 export LANG='en_US.UTF-8'
 export LC_ALL='en_US.UTF-8'
 
+# Colima settings (if used instead of Docker Desktop)
+export DOCKER_HOST="unix://${HOME}/.colima/default/docker.sock" 2>/dev/null
+export TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE="/var/run/docker.sock" 2>/dev/null
+
 # =======================
-# 🧠 18. COMPLETION
+# 🧠 17. COMPLETION
 # =======================
-# Autocompletion
 autoload -U compinit && compinit
 zstyle ':completion:*' menu select
 zstyle ':completion:*' list-colors ${(s.:.)LS_COLORS}
 
 # =======================
-# 📚 19. FINAL SETTINGS
+# 📚 18. FINAL SETTINGS
 # =======================
-# Syntax highlighting in less
 export LESS='-R'
 export LESS_TERMCAP_mb=$'\E[1;31m'
 export LESS_TERMCAP_md=$'\E[1;36m'
 export LESS_TERMCAP_me=$'\E[0m'
 
 # =======================
-# 🎪 20. WELCOME MESSAGE WITH PHOEBE CHECK
+# 🎪 19. WELCOME MESSAGE & FOLDER DETECTOR
 # =======================
-# =======================
-# 🛠️  PHOEBE FOLDER DETECTOR
-# =======================
-# This runs after every command
 phoebe_folder_check() {
-    if [[ -z "$LAST_PHOEBE_CHECK" ]] || [[ "$LAST_PHOEBE_CHECK" != "$PWD" ]]; then
-        LAST_PHOEBE_CHECK="$PWD"
-        
-        if [[ "$PWD" == *"phoebe"* ]]; then
-            echo ""
-            echo "📁 Phoebe folder detected!"
-            echo "💡 Type 'phi' for available commands"
-            echo ""
-        fi
-    fi
+    [[ "$PWD" != *"phoebe"* ]] && return
+    [[ -n "$PHOEBE_HINT_SHOWN" ]] && return
+    PHOEBE_HINT_SHOWN=1
+    echo ""
+    echo "📁 Phoebe folder detected!"
+    echo "💡 Type 'phi' for available commands"
+    echo ""
 }
-
-# Hook into precmd (runs before each prompt)
 autoload -Uz add-zsh-hook
 add-zsh-hook precmd phoebe_folder_check
 
-# =======================
-# 🎪 20.1 INITIAL WELCOME
-# =======================
-# Show welcome only for primary login shell
 if [[ -o login && -o interactive && -z "$TERMINAL_WELCOME_SHOWN" ]]; then
     export TERMINAL_WELCOME_SHOWN=1
-    
     clear
-    
     echo ""
     echo "══════════════════════════════════════════════════════════"
     echo "            🚀 Terminal Ready for Action!"
     echo "══════════════════════════════════════════════════════════"
-    echo ""
-    echo "📁 Phoebe Project:"
-    echo "   p, pbe, gw, make, pbd"
-    echo ""
-    echo "🐙 Git Commands:"
-    echo "   gs, gl, gp, gps"
-    echo ""
-    echo "🐳 Docker Control:"
-    echo "   dclean-step, docker-stop/start"
-    echo ""
-    echo "🛠️  Monitoring:"
-    echo "   pstatus, plogs, ports"
-    echo ""
-    echo "🚀 Quick Start:"
-    echo "   pdev - Full Phoebe restart"
-    echo ""
+    echo "📁 Phoebe: p, pbe, gw, mk, pbd"
+    echo "🐙 Git: gs, gl, gp, gps"
+    echo "🐳 Docker: dclean-step, docker-stop/start"
+    echo "🛠️  Monitor: pstatus, plogs, ports"
+    echo "🚀 Quick: pdev (Full Phoebe restart)"
     echo "══════════════════════════════════════════════════════════"
     echo ""
 fi
 
-# Function to show Phoebe info
 phoebe-info() {
     if [[ "$PWD" == *"phoebe"* ]]; then
         echo ""
@@ -534,59 +485,23 @@ phoebe-info() {
         echo "💡 Use 'p' or 'pbe' to navigate there"
     fi
 }
-
 alias phi='phoebe-info'
 
-
-# ====================================================
-# 🎯 QUICK USAGE GUIDE
-# ====================================================
-# 
-# ESSENTIAL COMMANDS:
-# -------------------
-# pdev                    # Full Phoebe restart: make reset && make run-hybrid
-# pstatus                 # Check Phoebe system status
-# pclean-docker           # Clean Phoebe Docker environment
-# 
-# DOCKER MANAGEMENT:
-# ------------------
-# docker-start           # Start Docker Desktop
-# docker-stop            # Stop Docker Desktop  
-# dclean-step            # Step-by-step Docker cleanup
-# dclean-all             # Aggressive Docker cleanup (removes everything)
-# pbd-up                 # Start Phoebe Docker containers
-# pbd-down               # Stop Phoebe Docker containers
-# 
-# DEVELOPMENT:
-# ------------
-# gw clean build         # Clean and build Phoebe
-# make reset             # Reset Phoebe environment
-# make run-hybrid        # Run Phoebe in hybrid mode
-# 
-# MONITORING:
-# -----------
-# plogs                  # View Phoebe application logs
-# ports                  # Check listening ports
-# dps                    # List Docker containers
-#
-# ====================================================
-# 🗃️  DOTFILES MANAGEMENT FUNCTIONS
-# ====================================================
-
-# Sync dotfiles with confirmation prompt
+# =======================
+# 🗃️ 20. DOTFILES MANAGEMENT (WITH BACKUPS)
+# =======================
 sync-dotfiles() {
     echo "🔄 Syncing dotfiles..."
-    cd ~/dev/dotfiles
+    cd ~/dev/dotfiles || return
     cp ~/.zshrc .
     
-    # Check if there are any changes
     if git diff --quiet; then
         echo "✅ No changes to sync"
     else
         echo "📝 Changes detected:"
         git diff --stat
         echo ""
-        read -q "REPLY?Commit and push? (y/n) "
+        read -q "REPLY?Commit and push? (y/N) "
         echo ""
         if [[ $REPLY =~ ^[Yy]$ ]]; then
             git add .
@@ -599,9 +514,8 @@ sync-dotfiles() {
     fi
 }
 
-# Quick sync without confirmation (for trusted updates)
 quick-dots-sync() {
-    cd ~/dev/dotfiles
+    cd ~/dev/dotfiles || return
     cp ~/.zshrc .
     git add .
     git commit -m "Quick update: $(date +'%Y-%m-%d %H:%M')" 2>/dev/null
@@ -609,102 +523,72 @@ quick-dots-sync() {
     echo "✅ Quick sync completed"
 }
 
-# Show changes before syncing
 dots-check() {
-    cd ~/dev/dotfiles
+    cd ~/dev/dotfiles || return
     cp ~/.zshrc .
     echo "📋 Changes to be synced:"
     git diff .zshrc
     echo ""
-    echo "Run 'dots-sync' to commit these changes"
+    echo "Run 'ds' to commit these changes"
 }
 
-# Restore configuration from repository
+# FIXED: Creates backup before restoring
 dots-restore() {
-    cd ~/dev/dotfiles
+    cd ~/dev/dotfiles || return
+    cp ~/.zshrc "$HOME/.zshrc.backup.$(date +%Y%m%d_%H%M%S)" 2>/dev/null
     cp .zshrc ~/.zshrc
     source ~/.zshrc
-    echo "✅ Configuration restored from repository"
+    echo "✅ Configuration restored from repository (old version backed up)"
 }
 
-# Check repository status
 dots-status() {
-    cd ~/dev/dotfiles
+    cd ~/dev/dotfiles || return
     echo "📊 Dotfiles repository status:"
     git status
 }
 
-# Show recent commit history
 dots-log() {
-    cd ~/dev/dotfiles
+    cd ~/dev/dotfiles || return
     echo "📜 Recent commits:"
     git log --oneline -10
 }
 
-# Compare local and repository versions
 dots-diff() {
-    cd ~/dev/dotfiles
+    cd ~/dev/dotfiles || return
     echo "🔍 Comparing local vs repository:"
     git diff .zshrc
 }
 
-# Pull latest changes from repository
+# FIXED: Creates backup before updating
 dots-update() {
-    cd ~/dev/dotfiles
+    cd ~/dev/dotfiles || return
     git pull
+    cp ~/.zshrc "$HOME/.zshrc.backup.$(date +%Y%m%d_%H%M%S)" 2>/dev/null
     cp .zshrc ~/.zshrc
     source ~/.zshrc
-    echo "✅ Updated from repository"
+    echo "✅ Updated from repository (old version backed up)"
 }
 
-# ====================================================
-# 🎯 DOTFILES ALIASES (Quick access)
-# ====================================================
-alias dots='cd ~/dev/dotfiles'           # Navigate to dotfiles directory
-alias dots-sync='sync-dotfiles'          # Sync with confirmation
-alias dots-quick='quick-dots-sync'       # Quick sync without confirmation
-alias dots-check='dots-check'            # Show changes before syncing
-alias dots-restore='dots-restore'        # Restore from repository
-alias dots-status='dots-status'          # Check repository status
-alias dots-log='dots-log'                # Show commit history
-alias dots-diff='dots-diff'              # Compare versions
-alias dots-update='dots-update'          # Pull and apply updates
-alias dots-help='echo "📚 Dotfiles commands: dots, dots-sync, dots-check, dots-restore, dots-status, dots-log, dots-diff, dots-update"'
+# Dotfiles aliases (cleaned up self-references)
+alias dots='cd ~/dev/dotfiles'
+alias ds='sync-dotfiles'
+alias dots-quick='quick-dots-sync'
+alias dotc='dots-check'
+alias dr='dots-restore'
+alias dos='dots-status'
+alias dl='dots-log'
+alias dd='dots-diff'
+alias dotsu='dots-update'
+alias dots-help='echo "📚 Dotfiles: dots, ds, dotc, dr, dos, dl, dd, dotsu, dots-quick"'
 
-# ====================================================
-# 💡 USAGE EXAMPLES:
-# 
-# dots                   # Go to dotfiles directory
-# dots-sync              # Sync changes with confirmation
-# dots-quick             # Quick sync without prompts
-# dots-check             # Preview changes before syncing
-# dots-restore           # Restore config from repository
-# dots-status            # Check repository status
-# dots-log               # Show commit history
-# dots-diff              # Compare local vs repo
-# dots-update            # Pull latest changes
-# ====================================================
-
-# ====================================================
-# 💾 Save this file to GitHub:
-#   git add ~/.zshrc
-#   git commit -m "Add terminal configuration for Phoebe project"
-#   git push
-# ====================================================
-
-
-# ====================================================
-# 💬 INTERACTIVE COMMENTS
-# ====================================================
-# Enable in-line comments in interactive shell
-# Allows using # for comments after commands
-# 
-# Example usage:
-#   $ echo hello # this will print hello
-#   $ ls -la # list all files with details
-#   $ some_command --option value # comment explaining why
-#
-# Without this option, zsh would treat # as literal character
-# With this option, everything after # is ignored as comment
-# ====================================================
+# =======================
+# 💬 21. INTERACTIVE COMMENTS
+# =======================
 setopt INTERACTIVE_COMMENTS
+
+# =======================
+# 🔐 22. SECRETS (SAFE LOAD)
+# =======================
+# Load personal secrets (tokens, passwords) if the file exists.
+# This file is in .gitignore and will never be pushed to GitHub.
+[[ -f ~/.secrets.zsh ]] && source ~/.secrets.zsh
